@@ -41,9 +41,11 @@ class MainActivity : AppCompatActivity() {
       StudentModel("Lê Văn Vũ", "SV020")
     )
 
-    val studentAdapter = StudentAdapter(students, this@MainActivity)
 
-    findViewById<RecyclerView>(R.id.recycler_view_students).run {
+    val parentView = findViewById<RecyclerView>(R.id.recycler_view_students)
+    val studentAdapter = StudentAdapter(students, this@MainActivity, parentView)
+
+    parentView.run {
       adapter = studentAdapter
       layoutManager = LinearLayoutManager(this@MainActivity)
     }

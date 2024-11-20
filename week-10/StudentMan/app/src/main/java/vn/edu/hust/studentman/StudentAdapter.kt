@@ -9,8 +9,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 
-class StudentAdapter(val students: MutableList<StudentModel>, val context: Context): RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
+class StudentAdapter(val students: MutableList<StudentModel>, val context: Context, val parentView: View): RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
+
   class StudentViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
     val textStudentName: TextView = itemView.findViewById(R.id.text_student_name)
     val textStudentId: TextView = itemView.findViewById(R.id.text_student_id)
@@ -42,9 +44,17 @@ class StudentAdapter(val students: MutableList<StudentModel>, val context: Conte
   }
 
   fun removeStudent(position: Int) {
+    val student = students[position]
+
     students.removeAt(position)
-    notifyItemRemoved(position)
-    notifyItemChanged(position, students.size)
+
+    Snackbar.make(parentView, "Đã xóa ${position}: ${student.studentName} - ${student.studentId}", Snackbar.LENGTH_LONG)
+      .setAction("Hoàn tác") {
+        students.add(position, student)
+        notifyDataSetChanged()
+      }.show()
+
+    notifyDataSetChanged()
   }
 
   fun showEditDialog(position: Int) {
