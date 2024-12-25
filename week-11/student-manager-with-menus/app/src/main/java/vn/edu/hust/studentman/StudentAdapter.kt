@@ -1,7 +1,9 @@
 package vn.edu.hust.studentman
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import android.view.ContextMenu
 import android.view.LayoutInflater
@@ -14,7 +16,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 
-class StudentAdapter(val students: MutableList<StudentModel>, val context: Context, val parentView: View, val launcher: ActivityResultLauncher<Intent>): RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
+class StudentAdapter(val students: MutableList<StudentModel>, val context: Context, val parentView: View, val launcher: ActivityResultLauncher<Intent>, val db: SQLiteDatabase): RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
 
   class StudentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
     View.OnCreateContextMenuListener {
@@ -74,10 +76,40 @@ class StudentAdapter(val students: MutableList<StudentModel>, val context: Conte
     val student = students[position]
 
     students.removeAt(position)
+
+    // Lưu lại recID của sinh viên bị xóa
+    var deletedRecID: Int = -1
+    val cursor = db.rawQuery("SELECT recID FROM student_table WHERE sid = ?", arrayOf(student.studentId))
+    if (cursor.moveToFirst()) {
+      deletedRecID = cursor.getInt(0) // Lấy giá trị recID
+    }
+    cursor.close()
+    db.beginTransaction()
+    try {
+      db.execSQL("DELETE FROM student_table WHERE recID = ?", arrayOf(deletedRecID.toString()))
+      db.setTransactionSuccessful()
+    } catch (ex: Exception) {
+      ex.printStackTrace()
+    } finally {
+      db.endTransaction()
+    }
     Log.v("TAG", "DELETE")
     Snackbar.make(parentView, "Đã xóa ${position}: ${student.studentName} - ${student.studentId}", Snackbar.LENGTH_LONG)
       .setAction("Hoàn tác") {
         students.add(position, student)
+
+        // Thêm lại vào cơ sở dữ liệu
+        db.beginTransaction()
+        try {
+          val sql = "INSERT OR REPLACE INTO student_table (recID, sid, name) VALUES (?, ?, ?)"
+          db.execSQL(sql, arrayOf(deletedRecID, student.studentId, student.studentName))
+          db.setTransactionSuccessful()
+        } catch (ex: Exception) {
+          ex.printStackTrace()
+        } finally {
+          db.endTransaction()
+        }
+
         notifyDataSetChanged()
       }.show()
 
